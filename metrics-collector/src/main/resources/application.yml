@@ -1,0 +1,19 @@
+server:
+  port: 8082
+collector:
+  targets:
+    - url: http://load-client:8081/metrics
+      interval-ms: 15000
+    - url: http://tsdb-server:8080/actuator/prometheus
+      interval-ms: 15000
+spring:
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

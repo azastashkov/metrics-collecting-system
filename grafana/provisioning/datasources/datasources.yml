@@ -1,0 +1,9 @@
+apiVersion: 1
+datasources:
+  - name: TSDB
+    type: prometheus
+    uid: tsdb
+    url: http://tsdb-server:8080
+    access: proxy
+    isDefault: true
+    editable: false

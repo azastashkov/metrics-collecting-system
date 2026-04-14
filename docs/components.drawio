@@ -1,0 +1,97 @@
+<mxfile host="app.diagrams.net" modified="2026-04-14T00:00:00.000Z" agent="Claude" version="24.0.0">
+  <diagram id="metrics-system" name="Components">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Title -->
+        <mxCell id="title" value="Metrics Monitoring and Alerting System" style="text;html=1;fontSize=20;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="500" y="20" width="600" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- Load Client -->
+        <mxCell id="load-client" value="Load Client&#xa;(Java 21 / Spring Boot)&#xa;Port: 8081&#xa;&#xa;- Mock HTTP Server&#xa;- Load Generator (Virtual Threads)&#xa;- Prometheus /metrics" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;verticalAlign=top;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="80" y="100" width="220" height="140" as="geometry"/>
+        </mxCell>
+
+        <!-- Metrics Collector -->
+        <mxCell id="collector" value="Metrics Collector&#xa;(Spring Boot)&#xa;Port: 8082&#xa;&#xa;- Scrapes /metrics endpoints&#xa;- Parses Prometheus format&#xa;- Publishes to Kafka" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=center;verticalAlign=top;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="440" y="100" width="220" height="140" as="geometry"/>
+        </mxCell>
+
+        <!-- Kafka -->
+        <mxCell id="kafka" value="Apache Kafka&#xa;(KRaft Mode)&#xa;&#xa;Topic: metrics-raw&#xa;3 Partitions" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="480" y="320" width="140" height="120" as="geometry"/>
+        </mxCell>
+
+        <!-- Kafka Consumer -->
+        <mxCell id="consumer" value="Kafka Consumer&#xa;(Spring Boot)&#xa;Port: 8083&#xa;&#xa;- Consumer Group&#xa;- Batch Accumulation&#xa;- Retry with Backoff&#xa;- 2 Replicas" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=center;verticalAlign=top;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="440" y="520" width="220" height="140" as="geometry"/>
+        </mxCell>
+
+        <!-- TSDB Server -->
+        <mxCell id="tsdb" value="TSDB Server&#xa;(Spring Boot)&#xa;Port: 8080&#xa;&#xa;- Columnar Storage Engine&#xa;- PromQL Parser (ANTLR4)&#xa;- Prometheus HTTP API&#xa;- Write API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=center;verticalAlign=top;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="820" y="400" width="220" height="160" as="geometry"/>
+        </mxCell>
+
+        <!-- Redis -->
+        <mxCell id="redis" value="Redis Cache&#xa;&#xa;Query Result Cache&#xa;TTL-based Eviction" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="300" width="140" height="110" as="geometry"/>
+        </mxCell>
+
+        <!-- Grafana -->
+        <mxCell id="grafana" value="Grafana&#xa;Port: 3000&#xa;&#xa;- Prometheus Datasource&#xa;- Auto-provisioned Dashboard&#xa;- 7 Metric Panels" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;align=center;verticalAlign=top;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="500" width="220" height="130" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrows -->
+        <!-- Load Client -> Collector (HTTP /metrics) -->
+        <mxCell id="e1" value="HTTP GET /metrics" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="load-client" target="collector" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Collector -> Kafka -->
+        <mxCell id="e2" value="Publish MetricSample" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="collector" target="kafka" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Kafka -> Consumer -->
+        <mxCell id="e3" value="Consume batches" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="kafka" target="consumer" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Consumer -> TSDB (HTTP Write) -->
+        <mxCell id="e4" value="POST /api/v1/write" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;" edge="1" source="consumer" target="tsdb" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- TSDB -> Redis (Cache) -->
+        <mxCell id="e5" value="Cache queries" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" source="tsdb" target="redis" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Grafana -> TSDB (PromQL Query) -->
+        <mxCell id="e6" value="PromQL queries&#xa;/api/v1/query_range" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.7;entryDx=0;entryDy=0;" edge="1" source="grafana" target="tsdb" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- TSDB self-monitoring -> Collector -->
+        <mxCell id="e7" value="Scrape /actuator" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0;exitY=0.3;exitDx=0;exitDy=0;entryX=1;entryY=0.8;entryDx=0;entryDy=0;dashed=1;" edge="1" source="tsdb" target="collector" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Docker label -->
+        <mxCell id="docker-label" value="All components run in Docker Compose" style="text;html=1;fontSize=12;fontStyle=2;align=center;fontColor=#999999;" vertex="1" parent="1">
+          <mxGeometry x="500" y="720" width="600" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Profile label -->
+        <mxCell id="profile-label" value="Docker Profile: test" style="text;html=1;fontSize=10;fontStyle=2;align=center;fontColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="100" y="80" width="180" height="20" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

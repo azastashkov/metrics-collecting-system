@@ -1,0 +1,19 @@
+server:
+  port: 8080
+tsdb:
+  storage:
+    data-dir: /data/tsdb
+    partition-duration-ms: 3600000
+    retention-ms: 86400000
+  cache:
+    enabled: true
+spring:
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: 6379
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

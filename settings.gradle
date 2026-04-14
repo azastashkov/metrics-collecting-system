@@ -1,0 +1,8 @@
+rootProject.name = 'metrics-collecting-system'
+
+include 'common'
+include 'tsdb-core'
+include 'tsdb-server'
+include 'metrics-collector'
+include 'kafka-consumer'
+include 'load-client'

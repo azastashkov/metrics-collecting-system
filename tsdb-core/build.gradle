@@ -1,0 +1,21 @@
+plugins {
+    id 'antlr'
+}
+
+dependencies {
+    antlr 'org.antlr:antlr4:4.13.2'
+    implementation 'org.antlr:antlr4-runtime:4.13.2'
+}
+
+generateGrammarSource {
+    arguments += ['-visitor', '-no-listener', '-package', 'com.metrics.tsdb.parser']
+    outputDirectory = file("${project.buildDir}/generated-src/antlr/main/com/metrics/tsdb/parser")
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir "${project.buildDir}/generated-src/antlr/main"
+        }
+    }
+}

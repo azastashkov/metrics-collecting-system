@@ -1,0 +1,21 @@
+server:
+  port: 8083
+consumer:
+  tsdb:
+    write-url: ${CONSUMER_TSDB_WRITE_URL:http://localhost:8080/api/v1/write}
+    batch-size: 500
+    flush-interval-ms: 5000
+    max-retry-attempts: 5
+spring:
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: metrics-consumers
+      auto-offset-reset: earliest
+      properties:
+        spring.json.trusted.packages: com.metrics.common.model
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

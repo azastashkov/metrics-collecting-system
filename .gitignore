@@ -1,0 +1,16 @@
+build/
+.gradle/
+*.class
+*.jar
+*.war
+.idea/
+*.iml
+*.ipr
+*.iws
+.settings/
+.classpath
+.project
+.env
+tsdb-data/
+out/
+bin/

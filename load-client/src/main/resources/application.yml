@@ -1,0 +1,14 @@
+server:
+  port: 8081
+loadclient:
+  concurrency: 10
+  target-rps: 100
+  mock-server:
+    latency-mean-ms: 100
+    latency-stddev-ms: 30
+    error-rate: 0.05
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

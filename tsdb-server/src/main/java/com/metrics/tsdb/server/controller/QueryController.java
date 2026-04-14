@@ -8,6 +8,9 @@ import com.metrics.tsdb.query.ResultType;
 import com.metrics.tsdb.storage.MetricStore;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,7 +36,7 @@ public class QueryController {
         this.metricStore = metricStore;
     }
 
-    @GetMapping("/api/v1/query")
+    @RequestMapping(value = "/api/v1/query", method = {RequestMethod.GET, RequestMethod.POST})
     public Map<String, Object> instantQuery(
             @RequestParam("query") String query,
             @RequestParam(value = "time", required = false) Double time) {
@@ -42,11 +45,20 @@ public class QueryController {
                 ? (long) (time * 1000)
                 : System.currentTimeMillis();
 
-        QueryResult result = queryEngine.instantQuery(query, evalTimestamp);
+        QueryResult result;
+        try {
+            result = queryEngine.instantQuery(query, evalTimestamp);
+        } catch (Exception e) {
+            // Handle unparseable queries (e.g. Grafana health check "1+1")
+            result = QueryResult.builder()
+                    .resultType(ResultType.VECTOR)
+                    .series(List.of())
+                    .build();
+        }
         return buildResponse(result);
     }
 
-    @GetMapping("/api/v1/query_range")
+    @RequestMapping(value = "/api/v1/query_range", method = {RequestMethod.GET, RequestMethod.POST})
     public Map<String, Object> rangeQuery(
             @RequestParam("query") String query,
             @RequestParam("start") String start,
@@ -63,7 +75,15 @@ public class QueryController {
             stepMs = (endMs - startMs) / maxSteps;
         }
 
-        QueryResult result = queryEngine.rangeQuery(query, startMs, endMs, stepMs);
+        QueryResult result;
+        try {
+            result = queryEngine.rangeQuery(query, startMs, endMs, stepMs);
+        } catch (Exception e) {
+            result = QueryResult.builder()
+                    .resultType(ResultType.MATRIX)
+                    .series(List.of())
+                    .build();
+        }
         return buildResponse(result);
     }
 
@@ -76,7 +96,7 @@ public class QueryController {
         return response;
     }
 
-    @GetMapping("/api/v1/labels")
+    @RequestMapping(value = "/api/v1/labels", method = {RequestMethod.GET, RequestMethod.POST})
     public Map<String, Object> labels() {
         Set<String> allLabels = metricStore.metricNames().stream()
                 .map(n -> "__name__")
@@ -107,7 +127,7 @@ public class QueryController {
         return response;
     }
 
-    @GetMapping("/api/v1/series")
+    @RequestMapping(value = "/api/v1/series", method = {RequestMethod.GET, RequestMethod.POST})
     public Map<String, Object> series(
             @RequestParam(value = "match[]", required = false) String match,
             @RequestParam(value = "start", required = false) String start,

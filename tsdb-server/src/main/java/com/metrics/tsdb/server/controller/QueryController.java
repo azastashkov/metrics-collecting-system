@@ -12,18 +12,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @RestController
 public class QueryController {
 
-    private static final Pattern STEP_PATTERN = Pattern.compile("^(\\d+)([smhd])$");
+    private static final Pattern STEP_PATTERN = Pattern.compile("^(\\d+\\.?\\d*)([smhd])?$");
 
     private final QueryEngine queryEngine;
     private final MetricStore metricStore;
@@ -49,13 +49,19 @@ public class QueryController {
     @GetMapping("/api/v1/query_range")
     public Map<String, Object> rangeQuery(
             @RequestParam("query") String query,
-            @RequestParam("start") Double start,
-            @RequestParam("end") Double end,
+            @RequestParam("start") String start,
+            @RequestParam("end") String end,
             @RequestParam("step") String step) {
 
-        long startMs = (long) (start * 1000);
-        long endMs = (long) (end * 1000);
+        long startMs = (long) (Double.parseDouble(start) * 1000);
+        long endMs = (long) (Double.parseDouble(end) * 1000);
         long stepMs = parseStep(step);
+
+        // Cap maximum steps to prevent OOM on wide queries
+        long maxSteps = 11000;
+        if ((endMs - startMs) / stepMs > maxSteps) {
+            stepMs = (endMs - startMs) / maxSteps;
+        }
 
         QueryResult result = queryEngine.rangeQuery(query, startMs, endMs, stepMs);
         return buildResponse(result);
@@ -66,16 +72,60 @@ public class QueryController {
         Set<String> values = metricStore.labelValues(name);
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("status", "success");
-        response.put("data", values);
+        response.put("data", List.copyOf(values));
+        return response;
+    }
+
+    @GetMapping("/api/v1/labels")
+    public Map<String, Object> labels() {
+        Set<String> allLabels = metricStore.metricNames().stream()
+                .map(n -> "__name__")
+                .collect(Collectors.toSet());
+        // Collect all label keys from all series
+        for (var key : metricStore.labelValues("__all_keys__")) {
+            allLabels.add(key);
+        }
+        // Fallback: get known label names by querying all series
+        allLabels.addAll(getAllLabelNames());
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("status", "success");
+        response.put("data", List.copyOf(allLabels));
+        return response;
+    }
+
+    @GetMapping("/api/v1/status/buildinfo")
+    public Map<String, Object> buildInfo() {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("version", "1.0.0");
+        data.put("revision", "custom-tsdb");
+        data.put("branch", "main");
+        data.put("goVersion", "java21");
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("status", "success");
+        response.put("data", data);
         return response;
     }
 
     @GetMapping("/api/v1/series")
-    public Map<String, Object> series(@RequestParam("match[]") String match) {
-        long endMs = System.currentTimeMillis();
-        long startMs = endMs - 300_000;
+    public Map<String, Object> series(
+            @RequestParam(value = "match[]", required = false) String match,
+            @RequestParam(value = "start", required = false) String start,
+            @RequestParam(value = "end", required = false) String end) {
 
-        QueryResult result = queryEngine.instantQuery(match, endMs);
+        String query = (match != null && !match.isBlank()) ? match : ".*";
+        long endMs = System.currentTimeMillis();
+
+        QueryResult result;
+        try {
+            result = queryEngine.instantQuery(query, endMs);
+        } catch (Exception e) {
+            // If the match expression is not parseable, return empty
+            result = QueryResult.builder()
+                    .resultType(ResultType.VECTOR)
+                    .series(List.of())
+                    .build();
+        }
 
         List<Map<String, String>> seriesList = new ArrayList<>();
         if (result.getSeries() != null) {
@@ -91,6 +141,20 @@ public class QueryController {
         response.put("status", "success");
         response.put("data", seriesList);
         return response;
+    }
+
+    private Set<String> getAllLabelNames() {
+        Set<String> labelNames = new java.util.HashSet<>();
+        for (String metricName : metricStore.metricNames()) {
+            try {
+                QueryResult result = queryEngine.instantQuery(metricName, System.currentTimeMillis());
+                for (TimeSeries ts : result.getSeries()) {
+                    labelNames.addAll(ts.getKey().getLabels().keySet());
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return labelNames;
     }
 
     private Map<String, Object> buildResponse(QueryResult result) {
@@ -147,13 +211,17 @@ public class QueryController {
         if (!matcher.matches()) {
             throw new IllegalArgumentException("Invalid step format: " + step);
         }
-        long amount = Long.parseLong(matcher.group(1));
+        double amount = Double.parseDouble(matcher.group(1));
         String unit = matcher.group(2);
+        if (unit == null) {
+            // Bare number = seconds
+            return (long) (amount * 1000);
+        }
         return switch (unit) {
-            case "s" -> amount * 1000;
-            case "m" -> amount * 60 * 1000;
-            case "h" -> amount * 3600 * 1000;
-            case "d" -> amount * 86400 * 1000;
+            case "s" -> (long) (amount * 1000);
+            case "m" -> (long) (amount * 60 * 1000);
+            case "h" -> (long) (amount * 3600 * 1000);
+            case "d" -> (long) (amount * 86400 * 1000);
             default -> throw new IllegalArgumentException("Unknown step unit: " + unit);
         };
     }

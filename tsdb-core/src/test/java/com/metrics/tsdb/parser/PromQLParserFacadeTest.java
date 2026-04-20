@@ -1,6 +1,15 @@
 package com.metrics.tsdb.parser;
 
-import com.metrics.tsdb.parser.ast.*;
+import com.metrics.tsdb.parser.ast.AggregateOp;
+import com.metrics.tsdb.parser.ast.AggregationExpr;
+import com.metrics.tsdb.parser.ast.BinaryExpr;
+import com.metrics.tsdb.parser.ast.BinaryOp;
+import com.metrics.tsdb.parser.ast.Expr;
+import com.metrics.tsdb.parser.ast.FunctionCallExpr;
+import com.metrics.tsdb.parser.ast.GroupingType;
+import com.metrics.tsdb.parser.ast.MatchType;
+import com.metrics.tsdb.parser.ast.RangeVectorSelector;
+import com.metrics.tsdb.parser.ast.VectorSelector;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;

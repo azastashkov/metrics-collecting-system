@@ -5,15 +5,27 @@ import com.metrics.tsdb.evaluator.function.RateFunctions;
 import com.metrics.tsdb.model.Sample;
 import com.metrics.tsdb.model.SeriesKey;
 import com.metrics.tsdb.model.TimeSeries;
-import com.metrics.tsdb.parser.ast.*;
+import com.metrics.tsdb.parser.ast.AggregationExpr;
+import com.metrics.tsdb.parser.ast.BinaryExpr;
+import com.metrics.tsdb.parser.ast.Expr;
+import com.metrics.tsdb.parser.ast.FunctionCallExpr;
+import com.metrics.tsdb.parser.ast.GroupingType;
+import com.metrics.tsdb.parser.ast.LabelMatcher;
+import com.metrics.tsdb.parser.ast.RangeVectorSelector;
+import com.metrics.tsdb.parser.ast.VectorSelector;
 import com.metrics.tsdb.query.QueryResult;
 import com.metrics.tsdb.query.ResultType;
 import com.metrics.tsdb.storage.MetricStore;
 import com.metrics.tsdb.storage.SeriesIndex;
 
 import java.time.Duration;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class PromQLEvaluator {
 
